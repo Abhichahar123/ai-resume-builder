@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Resume Builder</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Arial', sans-serif;
+    line-height: 1.6;
+    background-color: #f4f4f4;
+    color: #333;
+}
+
+.container {
+    width: 90%;
+    max-width: 800px;
+    margin: 2rem auto;
+    background-color: white;
+    padding: 2rem;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.resume-form section {
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background-color: #f9f9f9;
+    border-radius: 5px;
+}
+
+input, textarea {
+    width: 100%;
+    padding: 0.5rem;
+    margin-bottom: 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+button {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    margin: 0.5rem 0;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+button:hover {
+    background-color: #45a049;
+}
+
+#skills-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.skill-tag {
+    background-color: #e0e0e0;
+    padding: 0.25rem 0.5rem;
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+}
+
+.skill-tag .remove-skill {
+    margin-left: 0.5rem;
+    color: red;
+    cursor: pointer;
+}
+
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.4);
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 15% auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+}
+
+.close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>AI Resume Builder</h1>
+        </header>
+
+        <div class="resume-form">
+            <section id="personal-info">
+                <h2>Personal Information</h2>
+                <input type="text" id="full-name" placeholder="Full Name">
+                <input type="email" id="email" placeholder="Email">
+                <input type="tel" id="phone" placeholder="Phone Number">
+                <input type="text" id="location" placeholder="City, State">
+            </section>
+
+            <section id="education">
+                <h2>Education</h2>
+                <div id="education-container">
+                    <div class="education-entry">
+                        <input type="text" class="degree" placeholder="Degree">
+                        <input type="text" class="school" placeholder="School Name">
+                        <input type="text" class="graduation-year" placeholder="Graduation Year">
+                    </div>
+                </div>
+                <button id="add-education">+ Add Education</button>
+            </section>
+
+            <section id="work-experience">
+                <h2>Work Experience</h2>
+                <div id="experience-container">
+                    <div class="experience-entry">
+                        <input type="text" class="job-title" placeholder="Job Title">
+                        <input type="text" class="company" placeholder="Company Name">
+                        <input type="text" class="work-dates" placeholder="Employment Dates">
+                        <textarea class="job-description" placeholder="Job Responsibilities and Achievements"></textarea>
+                    </div>
+                </div>
+                <button id="add-experience">+ Add Experience</button>
+            </section>
+
+            <section id="skills">
+                <h2>Skills</h2>
+                <div id="skills-container">
+                    <input type="text" id="skill-input" placeholder="Enter a skill">
+                    <button id="add-skill">Add Skill</button>
+                </div>
+                <div id="skills-list"></div>
+            </section>
+
+            <section id="ai-suggestions">
+                <h2>AI Resume Enhancements</h2>
+                <button id="generate-suggestions">Generate AI Suggestions</button>
+                <div id="ai-suggestions-output"></div>
+            </section>
+
+            <div class="actions">
+                <button id="preview-resume">Preview Resume</button>
+                <button id="download-resume">Download Resume</button>
+            </div>
+        </div>
+
+        <div id="resume-preview" class="modal">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <div id="preview-content"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+    const addEducationBtn = document.getElementById('add-education');
+    const addExperienceBtn = document.getElementById('add-experience');
+    const addSkillBtn = document.getElementById('add-skill');
+    const skillInput = document.getElementById('skill-input');
+    const skillsList = document.getElementById('skills-list');
+    const generateSuggestionsBtn = document.getElementById('generate-suggestions');
+    const previewResumeBtn = document.getElementById('preview-resume');
+    const downloadResumeBtn = document.getElementById('download-resume');
+    const previewModal = document.getElementById('resume-preview');
+    const previewContent = document.getElementById('preview-content');
+    const closeModalBtn = document.querySelector('.close');
+
+    // Add Education Entry
+    addEducationBtn.addEventListener('click', () => {
+        const educationContainer = document.getElementById('education-container');
+        const newEntry = document.createElement('div');
+        newEntry.classList.add('education-entry');
+        newEntry.innerHTML = `
+            <input type="text" class="degree" placeholder="Degree">
+            <input type="text" class="school" placeholder="School Name">
+            <input type="text" class="graduation-year" placeholder="Graduation Year">
+            <button class="remove-entry">Remove</button>
+        `;
+        educationContainer.appendChild(newEntry);
+
+        // Add remove functionality
+        newEntry.querySelector('.remove-entry').addEventListener('click', () => {
+            educationContainer.removeChild(newEntry);
+        });
+    });
+
+    // Add Work Experience Entry
+    addExperienceBtn.addEventListener('click', () => {
+        const experienceContainer = document.getElementById('experience-container');
+        const newEntry = document.createElement('div');
+        newEntry.classList.add('experience-entry');
+        newEntry.innerHTML = `
+            <input type="text" class="job-title" placeholder="Job Title">
+            <input type="text" class="company" placeholder="Company Name">
+            <input type="text" class="work-dates" placeholder="Employment Dates">
+            <textarea class="job-description" placeholder="Job Responsibilities and Achievements"></textarea>
+            <button class="remove-entry">Remove</button>
+        `;
+        experienceContainer.appendChild(newEntry);
+
+        // Add remove functionality
+        newEntry.querySelector('.remove-entry').addEventListener('click', () => {
+            experienceContainer.removeChild(newEntry);
+        });
+    });
+
+    // Add Skills
+    addSkillBtn.addEventListener('click', () => {
+        const skill = skillInput.value.trim();
+        if (skill) {
+            const skillTag = document.createElement('div');
+            skillTag.classList.add('skill-tag');
+            skillTag.innerHTML = `
+                ${skill}
+                <span class="remove-skill">×</span>
+            `;
+            
+            skillTag.querySelector('.remove-skill').addEventListener('click', () => {
+                skillsList.removeChild(skillTag);
+            });
+
+            skillsList.appendChild(skillTag);
+            skillInput.value = ''; // Clear input
+        }
+    });
+
+    // AI Suggestions (Simulated)
+    generateSuggestionsBtn.addEventListener('click', () => {
+        const suggestionsOutput = document.getElementById('ai-suggestions-output');
+        suggestionsOutput.innerHTML = `
+            <h3>AI Resume Enhancement Suggestions:</h3>
+            <ul>
+                <li>Consider using action verbs like "developed", "implemented", "led"</li>
+                <li>Quantify achievements where possible (e.g., "Increased sales by 30%")</li>
+                <li>Tailor your skills to match job description keywords</li>
+                <li>Highlight unique projects or significant contributions</li>
+            </ul>
+        `;
+    });
+
+    // Preview Resume
+    previewResumeBtn.addEventListener('click', () => {
+        const fullName = document.getElementById('full-name').value;
+        const email = document.getElementById('email').value;
+        const phone = document.getElementById('phone').value;
+        const location = document.getElementById('location').value;
+
+        // Collect Education
+        const educationEntries = document.querySelectorAll('.education-entry');
+        const educationHTML = Array.from(educationEntries).map(entry => `
+            <p>
+                ${entry.querySelector('.degree').value}, 
+                ${entry.querySelector('.school').value} 
+                (${entry.querySelector('.graduation-year').value})
+            </p>
+        `).join('');
+
+        // Collect Work Experience
+        const experienceEntries = document.querySelectorAll('.experience-entry');
+        const experienceHTML = Array.from(experienceEntries).map(entry => `
+            <div>
+                <h4>${entry.querySelector('.job-title').value} at ${entry.querySelector('.company').value}</h4>
+                <p>${entry.querySelector('.work-dates').value}</p>
+                <p>${entry.querySelector('.job-description').value}</p>
+            </div>
+        `).join('');
+
+        // Collect Skills
+        const skillTags = document.querySelectorAll('.skill-tag');
+        const skillsHTML = Array.from(skillTags).map(tag => tag.firstChild.textContent).join(', ');
+
+        // Create Preview Content
+        previewContent.innerHTML = `
+            <h2>${fullName}</h2>
+            <p>${email} | ${phone} | ${location}</p>
+            
+            <h3>Education</h3>
+            ${educationEntries.length ? educationHTML : '<p>No education details provided.</p>'}
+            
+            <h3>Work Experience</h3>
+            ${experienceEntries.length ? experienceHTML : '<p>No work experience details provided.</p>'}
+            
+            <h3>Skills</h3>
+            <p>${skillsHTML || 'No skills added'}</p>
+        `;
+
+        // Show Preview Modal
+        previewModal.style.display = 'block';
+    });
+
+    // Close Modal
+    closeModalBtn.addEventListener('click', () => {
+        previewModal.style.display = 'none';
+    });
+
+    // Download Resume (Basic Implementation)
+    downloadResumeBtn.addEventListener('click', () => {
+        const previewText = previewContent.innerText;
+        const blob = new Blob([previewText], { type: 'text/plain' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `${document.getElementById('full-name').value}_Resume.txt`;
+        link.click();
+    });
+});
+    </script>
+</body>
+</html>
